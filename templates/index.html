@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<div class="jumbotron text-center">
+    <h1 class="display-4">Welcome to Bill Generator</h1>
+    <p class="lead">Create, manage, and print professional bills with ease.</p>
+    <hr class="my-4">
+    <p>Get started by creating a new bill or viewing existing ones.</p>
+    <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+        <a href="{{ url_for('create_bill') }}" class="btn btn-primary btn-lg px-4 gap-3">Create New Bill</a>
+        <a href="{{ url_for('view_bills') }}" class="btn btn-outline-secondary btn-lg px-4">View Bills</a>
+    </div>
+</div>
+{% endblock %}

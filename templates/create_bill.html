@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}Create Bill{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <h4>Create New Bill</h4>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('create_bill') }}">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="customer_name" class="form-label">Customer Name*</label>
+                    <input type="text" class="form-control" id="customer_name" name="customer_name" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="customer_phone" class="form-label">Customer Phone</label>
+                    <input type="text" class="form-control" id="customer_phone" name="customer_phone">
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="customer_address" class="form-label">Customer Address</label>
+                <textarea class="form-control" id="customer_address" name="customer_address" rows="2"></textarea>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="bill_date" class="form-label">Bill Date*</label>
+                    <input type="date" class="form-control" id="bill_date" name="bill_date" value="{{ today }}" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="due_date" class="form-label">Due Date</label>
+                    <input type="date" class="form-control" id="due_date" name="due_date">
+                </div>
+            </div>
+            
+            <hr>
+            <h5 class="mb-3">Items</h5>
+            
+            <div id="items-container">
+                <div class="item-row row mb-2">
+                    <div class="col-md-5">
+                        <input type="text" class="form-control" name="item_name[]" placeholder="Item name">
+                    </div>
+                    <div class="col-md-2">
+                        <input type="number" class="form-control quantity" name="item_quantity[]" placeholder="Qty" min="1" step="1">
+                    </div>
+                    <div class="col-md-3">
+                        <input type="number" class="form-control price" name="item_price[]" placeholder="Price" min="0" step="0.01">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-danger remove-item">Remove</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <button type="button" id="add-item" class="btn btn-secondary">Add Item</button>
+            </div>
+            
+            <hr>
+            
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label for="subtotal" class="form-label">Subtotal</label>
+                    <input type="number" class="form-control" id="subtotal" name="subtotal" readonly value="0.00">
+                </div>
+                <div class="col-md-4">
+                    <label for="tax" class="form-label">Tax (%)</label>
+                    <input type="number" class="form-control" id="tax" name="tax" min="0" max="100" step="0.01" value="0">
+                </div>
+                <div class="col-md-4">
+                    <label for="discount" class="form-label">Discount (%)</label>
+                    <input type="number" class="form-control" id="discount" name="discount" min="0" max="100" step="0.01" value="0">
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="total" class="form-label">Total</label>
+                <input type="number" class="form-control" id="total" name="total" readonly value="0.00">
+            </div>
+            
+            <div class="mb-3">
+                <label for="notes" class="form-label">Notes</label>
+                <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Save Bill</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add new item row
+    document.getElementById('add-item').addEventListener('click', function() {
+        const container = document.getElementById('items-container');
+        const newRow = document.createElement('div');
+        newRow.className = 'item-row row mb-2';
+        newRow.innerHTML = `
+            <div class="col-md-5">
+                <input type="text" class="form-control" name="item_name[]" placeholder="Item name">
+            </div>
+            <div class="col-md-2">
+                <input type="number" class="form-control quantity" name="item_quantity[]" placeholder="Qty" min="1" step="1">
+            </div>
+            <div class="col-md-3">
+                <input type="number" class="form-control price" name="item_price[]" placeholder="Price" min="0" step="0.01">
+            </div>
+            <div class="col-md-2">
+                <button type="button" class="btn btn-danger remove-item">Remove</button>
+            </div>
+        `;
+        container.appendChild(newRow);
+    });
+    
+    // Remove item row
+    document.addEventListener('click', function(e) {
+        if (e.target && e.target.classList.contains('remove-item')) {
+            const row = e.target.closest('.item-row');
+            if (document.querySelectorAll('.item-row').length > 1) {
+                row.remove();
+                calculateTotals();
+            } else {
+                // Clear inputs if it's the last row
+                const inputs = row.querySelectorAll('input');
+                inputs.forEach(input => input.value = '');
+            }
+        }
+    });
+    
+    // Calculate totals when quantities or prices change
+    document.addEventListener('input', function(e) {
+        if (e.target && (e.target.classList.contains('quantity') || e.target.classList.contains('price'))) {
+            calculateTotals();
+        }
+    });
+    
+    // Calculate tax and discount totals
+    document.getElementById('tax').addEventListener('input', calculateTotals);
+    document.getElementById('discount').addEventListener('input', calculateTotals);
+    
+    function calculateTotals() {
+        let subtotal = 0;
+        
+        // Calculate item totals
+        document.querySelectorAll('.item-row').forEach(row => {
+            const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
+            const price = parseFloat(row.querySelector('.price').value) || 0;
+            subtotal += quantity * price;
+        });
+        
+        // Calculate tax and discount
+        const taxRate = parseFloat(document.getElementById('tax').value) || 0;
+        const discountRate = parseFloat(document.getElementById('discount').value) || 0;
+        
+        const taxAmount = subtotal * (taxRate / 100);
+        const discountAmount = subtotal * (discountRate / 100);
+        const total = subtotal + taxAmount - discountAmount;
+        
+        // Update the fields
+        document.getElementById('subtotal').value = subtotal.toFixed(2);
+        document.getElementById('total').value = total.toFixed(2);
+    }
+});
+</script>
+{% endblock %}

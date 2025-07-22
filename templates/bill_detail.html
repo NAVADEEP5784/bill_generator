@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Bill #{{ bill['id'] }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <div class="d-flex justify-content-between align-items-center">
+            <h4>Bill #{{ bill['id'] }}</h4>
+            <div>
+                <a href="{{ url_for('edit_bill', bill_id=bill['id']) }}" class="btn btn-light btn-sm">Edit</a>
+                <form method="POST" action="{{ url_for('delete_bill', bill_id=bill['id']) }}" style="display: inline;">
+                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this bill?')">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <h5>From:</h5>
+                <p><strong>Bill Generator</strong><br>
+                123 Business Street<br>
+                City, State 12345<br>
+                Phone: (123) 456-7890</p>
+            </div>
+            <div class="col-md-6 text-end">
+                <h5>To:</h5>
+                <p><strong>{{ bill['customer_name'] }}</strong><br>
+                {{ bill['customer_address'] or '' }}<br>
+                {{ bill['customer_phone'] or '' }}</p>
+            </div>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <p><strong>Bill Date:</strong> {{ bill['bill_date'] }}</p>
+            </div>
+            <div class="col-md-6 text-end">
+                <p><strong>Due Date:</strong> {{ bill['due_date'] or 'N/A' }}</p>
+            </div>
+        </div>
+        
+        <div class="table-responsive mb-4">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Quantity</th>
+                        <th>Price</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td>{{ item['name'] }}</td>
+                        <td>{{ item['quantity'] }}</td>
+                        <td>${{ "%.2f"|format(item['price']) }}</td>
+                        <td>${{ "%.2f"|format(item['total']) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="3" class="text-end"><strong>Subtotal:</strong></td>
+                        <td>${{ "%.2f"|format(bill['subtotal']) }}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" class="text-end"><strong>Tax:</strong></td>
+                        <td>${{ "%.2f"|format(bill['tax']) }}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" class="text-end"><strong>Discount:</strong></td>
+                        <td>-${{ "%.2f"|format(bill['discount']) }}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" class="text-end"><strong>Total:</strong></td>
+                        <td>${{ "%.2f"|format(bill['total']) }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        
+        {% if bill['notes'] %}
+        <div class="mb-4">
+            <h5>Notes:</h5>
+            <p>{{ bill['notes'] }}</p>
+        </div>
+        {% endif %}
+        
+        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+            <button onclick="window.print()" class="btn btn-primary me-md-2">Print Bill</button>
+            <a href="{{ url_for('view_bills') }}" class="btn btn-secondary">Back to Bills</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
